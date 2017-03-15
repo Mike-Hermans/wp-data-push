@@ -1,0 +1,18 @@
+{
+    "name": "mike/intranet-client",
+    "authors": [
+        {
+            "name": "mike-hermans",
+            "email": "mail@mikehermans.nl"
+        }
+    ],
+	"require": {
+        "spomky-labs/jose": "^6.1",
+		"fgrosse/phpasn1": "^1.5"
+    },
+	"autoload": {
+		"files": [
+			"autoload.php"
+		]
+	}
+}
