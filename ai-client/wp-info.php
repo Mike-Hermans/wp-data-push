@@ -7,6 +7,7 @@ namespace AI_Client;
 
 class WP_Info {
 	public static function get_all() {
+		$db = self::database();
 		$info = array(
 			'timestamp' => date( DATE_ISO8601 ),
 			'versions' => array(
@@ -14,7 +15,8 @@ class WP_Info {
 				'php' => phpversion(),
 			),
 			'plugins' => self::plugins(),
-			'database' => self::database(),
+			'database' => $db['info'],
+			'database_tables' => $db['tables'],
 			'server' => self::server_info( 'variable' ),
 			'server_static' => self::server_info( 'static' ),
 		);
@@ -22,6 +24,7 @@ class WP_Info {
 	}
 
 	public static function get_default() {
+		$db = self::database();
 		$info = array(
 			'versions' => array(
 				'wp' => self::wp_version(),
@@ -135,8 +138,9 @@ class WP_Info {
 		);
 
 		$db = array();
-		$db['size_in_mb'] = 0;
-		$db['table_count'] = count( $tables );
+		$db['info'] = array();
+		$db['info']['size_in_mb'] = 0;
+		$db['info']['table_count'] = count( $tables );
 		$db['tables'] = array();
 
 		foreach ( $tables as $table ) {
@@ -145,7 +149,7 @@ class WP_Info {
 				'row_count' => $table->table_rows,
 				'size_in_mb' => round( ( ( $table->data_length + $table->index_length ) / 1024 / 1024 ), 3 ),
 			);
-			$db['size_in_mb'] += $table_info['size_in_mb'];
+			$db['info']['size_in_mb'] += $table_info['size_in_mb'];
 			$db['tables'][] = $table_info;
 		}
 
