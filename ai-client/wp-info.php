@@ -9,7 +9,6 @@ class WP_Info {
 	public static function get_all() {
 		$db = self::database();
 		$info = array(
-			'timestamp' => date( DATE_ISO8601 ),
 			'versions' => array(
 				'wp' => self::wp_version(),
 				'php' => phpversion(),
@@ -31,7 +30,8 @@ class WP_Info {
 				'php' => phpversion(),
 			),
 			'plugins' => self::plugins(),
-			'database' => self::database(),
+			'database' => $db['info'],
+			'database_tables' => $db['tables'],
 			'server' => self::server_info( 'variable' ),
 		);
 		return $info;
