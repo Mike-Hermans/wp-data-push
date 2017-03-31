@@ -7,7 +7,7 @@ class Endpoints {
 		$prefix = 'ai-client/v1';
 
 		register_rest_route( $prefix, '/status', array(
-			'methods' => 'POST',
+			'methods' => 'GET',
 			'callback' => array( $this, 'display_status' ),
 		) );
 	}
@@ -22,15 +22,14 @@ class Endpoints {
 			'server_usage',
 			'server'
 		);
-		$params = $request->get_body_params();
-		if ( isset( $params['categories'] ) ) {
-			$categories = $params['categories'];
+		if ( isset( $request['categories'] ) ) {
+			$categories = $request['categories'];
 			if ( strlen( $categories ) <= strlen( implode( ',', $valid_parameters ) ) ) {
 				$categories = array_intersect( $valid_parameters, explode( ',', $categories ) );
 
 				$wpinfo = new WP_Info( $categories );
 				$response = new \WP_REST_Response( array(
-						'data' => Crypt::encrypt( $wpinfo->get() ),
+						'data' => Crypt::encrypt( $wpinfo->get() )
 				) );
 				$response->set_status( 200 );
 				return $response;
