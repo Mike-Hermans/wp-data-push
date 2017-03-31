@@ -13,12 +13,33 @@ class Endpoints {
 	}
 
 	// Show all new data
-	public function display_status( $level = 'default' ) {
+	public function display_status( \WP_REST_Request $request ) {
+		$valid_parameters = array(
+			'versions',
+			'plugins',
+			'database',
+			'database_tables',
+			'server_usage',
+			'server'
+		);
+		$params = $request->get_body_params();
+		if ( isset( $params['categories'] ) ) {
+			$categories = $params['categories'];
+			if ( strlen( $categories ) <= strlen( implode( ',', $valid_parameters ) ) ) {
+				$categories = array_intersect( $valid_parameters, explode( ',', $categories ) );
+
+				$wpinfo = new WP_Info( $categories );
+				$response = new \WP_REST_Response( array(
+						'data' => Crypt::encrypt( $wpinfo->get() ),
+				) );
+				$response->set_status( 200 );
+				return $response;
+			}
+		}
 		$response = new \WP_REST_Response( array(
-				'data' => Crypt::encrypt( WP_Info::get_all() ),
-				//'data' => WP_Info::get_all(),
+				'error' => 'invalid_parameters',
 		) );
-		$response->set_status( 200 );
+		$response->set_status( 400 );
 		return $response;
 	}
 }

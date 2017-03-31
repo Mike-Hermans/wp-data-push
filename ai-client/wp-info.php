@@ -1,56 +1,36 @@
 <?php
-/*
- TODO:
- Database size (Total & wp_option);
-*/
+
 namespace AI_Client;
 
 class WP_Info {
-	public static function get_all() {
-		$db = self::database();
-		$info = array(
-			'versions' => array(
-				'wp' => self::wp_version(),
-				'php' => phpversion(),
-			),
-			'plugins' => self::plugins(),
-			'database' => $db['info'],
-			'database_tables' => $db['tables'],
-			'server' => self::server_info( 'variable' ),
-			'server_static' => self::server_info( 'static' ),
-		);
+	private $categories;
+
+	private $db;
+
+	public function __construct( $categories ) {
+		$this->categories = $categories;
+	}
+
+	public function get() {
+		$info = array();
+		foreach ( $this->categories as $category ) {
+			if ( method_exists( $this, $category ) ) {
+				$info[ $category ] = call_user_func( array( $this, $category ) );
+			}
+		}
 		return $info;
 	}
 
-	public static function get_default() {
-		$db = self::database();
-		$info = array(
-			'versions' => array(
-				'wp' => self::wp_version(),
-				'php' => phpversion(),
-			),
-			'plugins' => self::plugins(),
-			'database' => $db['info'],
-			'database_tables' => $db['tables'],
-			'server' => self::server_info( 'variable' ),
-		);
-		return $info;
-	}
-
-	public static function get_serverinfo() {
-		$info = array(
-			'serverinfo' => self::facter(),
-		);
-		return $info;
-	}
-
-	public static function wp_version() {
+	private function versions() {
 		include_once( ABSPATH . 'wp-includes' . DIRECTORY_SEPARATOR . 'version.php' );
 		global $wp_version;
-		return $wp_version;
+		return array(
+			'wp' => $wp_version,
+			'php' => phpversion(),
+		);
 	}
 
-	public static function plugins() {
+	private function plugins() {
 		if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
@@ -76,7 +56,21 @@ class WP_Info {
 		return $plugins;
 	}
 
-	public static function server_info( $return = '' ) {
+	private function database() {
+		if ( is_null( $this->db ) ) {
+			$this->db = $this->database_info();
+		}
+		return $this->db['info'];
+	}
+
+	private function database_tables() {
+		if ( is_null( $this->db ) ) {
+			$this->db = $this->database_info();
+		}
+		return $this->db['tables'];
+	}
+
+	private function server() {
 		$facter = shell_exec( 'facter -j' );
 		$serverinfo = json_decode( $facter, true );
 
@@ -91,43 +85,45 @@ class WP_Info {
 			'sshfp_ecdsa' => 0,
 			'macaddress' => 0,
 			'memorysize' => 0,
-			'memoryfree' => 0,
+			'uptime_days' => 0,
+			'uptime_hours' => 0,
+			'uptime_seconds' => 0,
+			'memoryfree_mb' => 0,
 		);
 
 		foreach ( $filter as $f ) {
 			$serverinfo = array_diff_key( $serverinfo, $filter );
 		}
 
-		$variable_items = array(
-			'uptime_days' => 0,
-			'uptime_hours' => 0,
-			'uptime_seconds' => 0,
-			'memorysize_mb' => 0,
-			'memoryfree_mb' => 0,
-		);
+		// Add HDD size (in mb)
+		$serverinfo['hddsize_mb'] = round( disk_total_space( '/' ) / 1024 / 1024, 2 );
 
-		if ( 'static' == $return ) {
-			return array_diff_key( $serverinfo, $variable_items );
-		}
+		return array_diff_key( $serverinfo, $variable_items );
+	}
 
-		if ( 'variable' == $return ) {
-			$serverinfo = array_intersect_key( $serverinfo, $variable_items );
-		}
+	private function server_usage() {
+		// HDD
+		$hdd_free = round( disk_free_space( '/' ) );
+		$hdd_total = round( disk_total_space( '/' ) );
+		$hdd_used = $hdd_total - $hdd_free;
 
-		// Add missing items (HDD Size, network activity)
-		//hdd stat
-		$serverinfo['hdd_free'] = round( disk_free_space( '/' ) / 1024 / 1024 / 1024, 2 );
-		$serverinfo['hdd_total'] = round( disk_total_space( '/' ) / 1024 / 1024 / 1024, 2 );
-		$serverinfo['hdd_used'] = $serverinfo['hdd_total'] - $serverinfo['hdd_free'];
-		$serverinfo['hdd_percent'] = round( sprintf( '%.2f', ( $serverinfo['hdd_used'] / $serverinfo['hdd_total'] ) * 100 ), 2 );
-		//network stat
+		// RAM
+		$free = shell_exec('free');
+		$free = (string)trim($free);
+		$free_arr = explode("\n", $free);
+		$mem = explode(" ", $free_arr[1]);
+		$mem = array_filter($mem);
+		$mem = array_merge($mem);
+
+		$serverinfo['mem'] = round( sprintf( '%.2f', $mem[2]/$mem[1]*100 ), 2 );
+		$serverinfo['hdd'] = round( sprintf( '%.2f', ( $hdd_used / $hdd_total ) * 100 ), 2 );
 		$serverinfo['network_rx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/rx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
 		$serverinfo['network_tx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/tx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
 
 		return $serverinfo;
 	}
 
-	public static function database() {
+	private function database_info() {
 		global $wpdb;
 
 		$tables = $wpdb->get_results(
@@ -152,7 +148,6 @@ class WP_Info {
 			$db['info']['size_in_mb'] += $table_info['size_in_mb'];
 			$db['tables'][] = $table_info;
 		}
-
 		return $db;
 	}
 }
