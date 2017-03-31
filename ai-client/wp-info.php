@@ -98,7 +98,7 @@ class WP_Info {
 		// Add HDD size (in mb)
 		$serverinfo['hddsize_mb'] = round( disk_total_space( '/' ) / 1024 / 1024, 2 );
 
-		return array_diff_key( $serverinfo, $variable_items );
+		return $serverinfo;
 	}
 
 	private function server_usage() {
