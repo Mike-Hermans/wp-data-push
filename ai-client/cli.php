@@ -25,6 +25,11 @@ class CLI extends \WP_CLI {
 		$this->set_option( 'show_admin', true );
 	}
 
+	public function status() {
+		$status = new Events();
+		\WP_CLI::line( json_encode( $status->get_events() ) );
+	}
+
 	private function set_option( $option, $value ) {
 		$options = get_option( 'ai_client_options' );
 		$options[ $option ] = $value;
