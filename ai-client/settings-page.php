@@ -55,6 +55,30 @@ class Settings_Page {
 		);
 
 		add_settings_field(
+			'show_admin',
+			'',
+			array( $this, '_ai_hidden_fields' ),
+			'intranet-client-options',
+			'section_client_settings'
+		);
+
+		add_settings_field(
+			'remote_url',
+			'Remote URL',
+			array( $this, '_ai_remote_url' ),
+			'intranet-client-options',
+			'section_client_settings'
+		);
+
+		add_settings_field(
+			'project_name',
+			'Project name',
+			array( $this, '_ai_project_name' ),
+			'intranet-client-options',
+			'section_client_settings'
+		);
+
+		add_settings_field(
 			'project_key', // ID
 			'Project Key', // Title
 			array( $this, '_ai_project_key' ), // Callback
@@ -70,9 +94,29 @@ class Settings_Page {
 	/*
 	 *	CLIENT RELATED SETTINGS
 	 */
-
 	public function print_client_section_info() {
 		print 'Enter your settings below:';
+	}
+
+	public function _ai_hidden_fields() {
+		printf(
+			'<input type="hidden" id="show_admin" name="ai_client_options[show_admin]" value="%s" />',
+			isset( $this->options['show_admin'] ) ? esc_attr( $this->options['show_admin'] ) : ''
+		);
+	}
+
+	public function _ai_project_name() {
+		printf(
+			'<input type="text" id="project_name" name="ai_client_options[project_name]" value="%s" />',
+			isset( $this->options['project_name'] ) ? esc_attr( $this->options['project_name'] ) : ''
+		);
+	}
+
+	public function _ai_remote_url() {
+		printf(
+			'<input type="text" id="remote_url" name="ai_client_options[remote_url]" value="%s" />',
+			isset( $this->options['remote_url'] ) ? esc_attr( $this->options['remote_url'] ) : ''
+		);
 	}
 
 	public function _ai_project_key() {

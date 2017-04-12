@@ -5,19 +5,23 @@ namespace AI_Client;
 class Events {
     private $old_status;
     private $new_status;
+    public $status;
 
     public function __construct() {
         if ( false === ( $old_status = get_option( 'ai_status' ) ) ) {
-            $this->old_status = false;
+            $this->status = false;
             $this->save_current_status( $this->get_status() );
-            return array();
+            return;
         }
+        $this->status = true;
         $this->old_status = $old_status;
         $this->new_status = $this->get_status();
     }
 
-    // ugh
     public function get_events() {
+        if ( ! $this->status ) {
+            return array();
+        }
         $events = array();
 
         foreach ( $this->old_status['versions'] as $product => $version ) {
@@ -65,11 +69,11 @@ class Events {
             );
 
         foreach ( $this->old_status['plugins'] as $plugin => $data ) {
-            if ( isset( $this->new_status['plugins'][$plugin] ) ) {
-                if ( version_compare( $data['version'], $this->new_status['plugins'][$plugin]['version'], '<' ) ) {
-                    $events[] = 'Updated ' . $plugin . ' from version ' . $data['version'] . ' to ' . $this->new_status['plugins'][$plugin]['version'] . '.';
-                } else if ( version_compare( $data['version'], $this->new_status['plugins'][$plugin]['version'], '>' ) ) {
-                    $events[] = 'Downgraded ' . $plugin . ' from version ' . $data['version'] . ' to ' . $this->new_status['plugins'][$plugin]['version'] . '.';
+            if ( isset( $this->new_status['plugins'][ $plugin ] ) ) {
+                if ( version_compare( $data['version'], $this->new_status['plugins'][ $plugin ]['version'], '<' ) ) {
+                    $events[] = 'Updated ' . $plugin . ' from version ' . $data['version'] . ' to ' . $this->new_status['plugins'][ $plugin ]['version'] . '.';
+                } else if ( version_compare( $data['version'], $this->new_status['plugins'][ $plugin ]['version'], '>' ) ) {
+                    $events[] = 'Downgraded ' . $plugin . ' from version ' . $data['version'] . ' to ' . $this->new_status['plugins'][ $plugin ]['version'] . '.';
                 }
             }
         }
@@ -87,6 +91,13 @@ class Events {
         $this->save_current_status( $this->new_status );
 
         return $events;
+    }
+
+    public function get_updated() {
+        if ( ! empty( $this->updated ) ) {
+            return $this->updated;
+        }
+        return false;
     }
 
     private function difference( $one, $two, $string ) {

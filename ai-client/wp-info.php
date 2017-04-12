@@ -4,20 +4,26 @@ namespace AI_Client;
 
 class WP_Info {
 	private $categories;
-
 	private $db;
 
-	public function __construct( $categories ) {
-		$this->categories = $categories;
-	}
-
 	public function get() {
+		$events = new Events();
+
+		if ( ! $events->status ) {
+			$categories = array( 'server_usage', 'network', 'tables', 'server', 'plugins', 'versions' );
+		} else {
+			$categories = array('server_usage', 'network', 'tables');
+			if ( ! empty( $events->get_events() ) ) {
+				$categories = array_merge( $categories, array( 'plugins', 'versions' ) );
+			}
+		}
 		$info = array();
-		foreach ( $this->categories as $category ) {
+		foreach ( $categories as $category ) {
 			if ( method_exists( $this, $category ) ) {
 				$info[ $category ] = call_user_func( array( $this, $category ) );
 			}
 		}
+		$info['events'] = $events->get_events();
 		return $info;
 	}
 
@@ -56,20 +62,7 @@ class WP_Info {
 		return $plugins;
 	}
 
-	private function database() {
-		if ( is_null( $this->db ) ) {
-			$this->db = $this->database_info();
-		}
-		return $this->db['info'];
-	}
-
-	private function database_tables() {
-		if ( is_null( $this->db ) ) {
-			$this->db = $this->database_info();
-		}
-		return $this->db['tables'];
-	}
-
+	// Returns more general server information
 	private function server() {
 		$facter = shell_exec( 'facter -j' );
 		$serverinfo = json_decode( $facter, true );
@@ -101,6 +94,7 @@ class WP_Info {
 		return $serverinfo;
 	}
 
+	// Returns RAM and HDD usage in percentage
 	private function server_usage() {
 		// HDD
 		$hdd_free = round( disk_free_space( '/' ) );
@@ -117,36 +111,35 @@ class WP_Info {
 
 		$serverinfo['mem'] = round( sprintf( '%.2f', $mem[2]/$mem[1]*100 ), 2 );
 		$serverinfo['hdd'] = round( sprintf( '%.2f', ( $hdd_used / $hdd_total ) * 100 ), 2 );
-		$serverinfo['network_rx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/rx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
-		$serverinfo['network_tx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/tx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
 
 		return $serverinfo;
 	}
 
-	private function database_info() {
+	// Returns in and outgoing network in MB
+	private function network() {
+		$network['rx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/rx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
+		$network['tx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/tx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
+
+		return $network;
+	}
+
+	// Returns database tables and their size
+	private function tables() {
 		global $wpdb;
 
 		$tables = $wpdb->get_results(
-			'SELECT table_name, table_rows, index_length, data_length
+			'SELECT table_name, index_length, data_length
 			FROM information_schema.tables
 			WHERE table_schema = DATABASE()
 			ORDER BY ( index_length + data_length ) DESC'
 		);
 
 		$db = array();
-		$db['info'] = array();
-		$db['info']['size_in_mb'] = 0;
-		$db['info']['table_count'] = count( $tables );
-		$db['tables'] = array();
 
 		foreach ( $tables as $table ) {
-			$table_info = array(
-				'name' => $table->table_name,
-				'row_count' => $table->table_rows,
+			$db[ $table->table_name ] = array(
 				'size_in_mb' => round( ( ( $table->data_length + $table->index_length ) / 1024 / 1024 ), 3 ),
 			);
-			$db['info']['size_in_mb'] += $table_info['size_in_mb'];
-			$db['tables'][] = $table_info;
 		}
 		return $db;
 	}
