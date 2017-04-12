@@ -135,12 +135,15 @@ class WP_Info {
 		);
 
 		$db = array();
-
+		$db['total'] = array( 'size_in_mb' => 0 );
 		foreach ( $tables as $table ) {
+			$size = round( ( ( $table->data_length + $table->index_length ) / 1024 / 1024 ), 3 );
 			$db[ $table->table_name ] = array(
-				'size_in_mb' => round( ( ( $table->data_length + $table->index_length ) / 1024 / 1024 ), 3 ),
+				'size_in_mb' => $size
 			);
+			$db['total']['size_in_mb'] += $size;
 		}
+
 		return $db;
 	}
 }

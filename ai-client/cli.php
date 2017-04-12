@@ -203,7 +203,6 @@ class CLI extends \WP_CLI {
 		        'Authorization' => 'Basic ' . base64_encode( $options['project_name'] . ':' . $options['project_key'] ),
 		    ),
 		) );
-		var_dump( $wpinfo->get() );
 		if ( $response['response']['code'] != 200 ){
 			\WP_CLI::line( $response['response']['code'] );
 		} else {
