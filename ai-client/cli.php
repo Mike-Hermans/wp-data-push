@@ -197,8 +197,6 @@ class CLI extends \WP_CLI {
 	public function send( $args ) {
 		$options = get_option( 'ai_client_options' );
 		$wpinfo = new WP_Info();
-		echo json_encode($wpinfo->get());
-		die();
 
 		$response = wp_remote_post( $options['remote_url'] . 'api/collect', array(
 		    'body'    => json_encode($wpinfo->get()),
