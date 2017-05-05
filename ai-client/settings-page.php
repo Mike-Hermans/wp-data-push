@@ -98,6 +98,9 @@ class Settings_Page {
 		print 'Enter your settings below:';
 	}
 
+	/**
+	 * Needs to exist or else the option will be deleted on save
+	 */
 	public function _ai_hidden_fields() {
 		printf(
 			'<input type="hidden" id="show_admin" name="ai_client_options[show_admin]" value="%s" />',
@@ -105,6 +108,9 @@ class Settings_Page {
 		);
 	}
 
+	/*
+		Print out all the fields related to the options
+	 */
 	public function _ai_project_name() {
 		printf(
 			'<input type="text" id="project_name" name="ai_client_options[project_name]" value="%s" />',

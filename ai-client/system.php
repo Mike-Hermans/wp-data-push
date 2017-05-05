@@ -3,7 +3,7 @@
 namespace AI_Client;
 
 class System {
-	public static $version = '1.0';
+	public static $version = '2.1';
 
 	public function activation() {
 		new Events(); // Create status snapshot

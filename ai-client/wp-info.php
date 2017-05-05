@@ -9,14 +9,11 @@ class WP_Info {
 	public function get() {
 		$events = new Events();
 
-		if ( ! $events->status ) {
-			$categories = array( 'server_usage', 'network', 'tables', 'server', 'plugins', 'versions' );
-		} else {
-			$categories = array('server_usage', 'network', 'tables');
-			if ( ! empty( $events->get_events() ) ) {
-				$categories = array_merge( $categories, array( 'plugins', 'versions' ) );
-			}
+		$categories = array('usage', 'network', 'tables');
+		if ( ! empty( $events->get_events() ) || ! $events->status ) {
+			$categories = array_merge( $categories, array( 'plugins', 'wp_version', 'status' ) );
 		}
+
 		$info = array();
 		foreach ( $categories as $category ) {
 			if ( method_exists( $this, $category ) ) {
@@ -27,12 +24,33 @@ class WP_Info {
 		return $info;
 	}
 
-	private function versions() {
+	private function wp_version() {
 		include_once( ABSPATH . 'wp-includes' . DIRECTORY_SEPARATOR . 'version.php' );
 		global $wp_version;
 		return array(
-			'wp' => $wp_version,
-			'php' => phpversion(),
+			'wp' => $wp_version
+		);
+	}
+
+	/*
+		Server specific information that won't change a lot, such as PHP Version
+		and time since last boot
+	*/
+	private function status() {
+		$uptime = '';
+		if ( function_exists('shell_exec') ) {
+			$uptime = shell_exec('uptime -s');
+			$uptime = strtotime($uptime);
+		}
+
+		$mem = $this->get_memory();
+
+		return array(
+			'php' => PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION . "." . PHP_RELEASE_VERSION,
+			'os' => $this->get_os_version(),
+			'disk' => disk_total_space( '/' ),
+			'mem' => $mem[1],
+			'up' => $uptime
 		);
 	}
 
@@ -47,80 +65,43 @@ class WP_Info {
 		$plugins = array();
 		foreach ( get_plugins() as $fullname => $plugin ) {
 			$active = false;
+			$new_version = null;
+
 			if ( in_array( $fullname, $plugins_active ) ) {
 				$active = true;
+			}
+			if ( isset( $plugins_updates->response[ $fullname ] ) ) {
+				$new_version = $plugins_updates->response[ $fullname ]->new_version;
 			}
 			$plugins[] = array(
 				'name' => $plugin['Name'],
 				'version' => $plugin['Version'],
-				'slug' => $plugin['TextDomain'],
+				'slug' => sanitize_title($plugin['Name']),
 				'active' => $active,
 				'uri' => $plugin['PluginURI'],
+				'new_version' => $new_version
 			);
 		}
 
 		return $plugins;
 	}
 
-	// Returns more general server information
-	private function server() {
-		$facter = shell_exec( 'facter -j' );
-		$serverinfo = json_decode( $facter, true );
-
-		// Filter keys
-		$filter = array(
-			'path' => 0,
-			'sshdsakey' => 0,
-			'sshfp_dsa' => 0,
-			'sshrsakey' => 0,
-			'sshfp_rsa' => 0,
-			'sshecdsakey' => 0,
-			'sshfp_ecdsa' => 0,
-			'macaddress' => 0,
-			'memorysize' => 0,
-			'uptime_days' => 0,
-			'uptime_hours' => 0,
-			'uptime_seconds' => 0,
-			'memoryfree_mb' => 0,
-		);
-
-		foreach ( $filter as $f ) {
-			$serverinfo = array_diff_key( $serverinfo, $filter );
-		}
-
-		// Add HDD size (in mb)
-		$serverinfo['hddsize_mb'] = round( disk_total_space( '/' ) / 1024 / 1024, 2 );
-
-		return $serverinfo;
-	}
-
 	// Returns RAM and HDD usage in percentage
-	private function server_usage() {
+	private function usage() {
 		// HDD
 		$hdd_free = round( disk_free_space( '/' ) );
 		$hdd_total = round( disk_total_space( '/' ) );
 		$hdd_used = $hdd_total - $hdd_free;
 
-		// RAM
-		$free = shell_exec('free');
-		$free = (string)trim($free);
-		$free_arr = explode("\n", $free);
-		$mem = explode(" ", $free_arr[1]);
-		$mem = array_filter($mem);
-		$mem = array_merge($mem);
+		$mem = $this->get_memory();
 
-		$serverinfo['mem'] = round( sprintf( '%.2f', $mem[2]/$mem[1]*100 ), 2 );
-		$serverinfo['hdd'] = round( sprintf( '%.2f', ( $hdd_used / $hdd_total ) * 100 ), 2 );
+		$usage = array();
+		$usage['ram'] = round( sprintf( '%.2f', $mem[2] / $mem[1] * 100 ), 2 );
+		$usage['hdd'] = round( sprintf( '%.2f', $hdd_used / $hdd_total * 100 ), 2 );
+		$usage['rx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/rx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
+		$usage['tx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/tx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
 
-		return $serverinfo;
-	}
-
-	// Returns in and outgoing network in MB
-	private function network() {
-		$network['rx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/rx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
-		$network['tx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/tx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
-
-		return $network;
+		return $usage;
 	}
 
 	// Returns database tables and their size
@@ -135,15 +116,61 @@ class WP_Info {
 		);
 
 		$db = array();
-		$db['total'] = array( 'size_in_mb' => 0 );
+		$db['total'] = 0;
 		foreach ( $tables as $table ) {
 			$size = round( ( ( $table->data_length + $table->index_length ) / 1024 / 1024 ), 3 );
-			$db[ $table->table_name ] = array(
-				'size_in_mb' => $size
-			);
-			$db['total']['size_in_mb'] += $size;
+			$db[$table->table_name] = $size;
+			$db['total'] += $size;
 		}
 
 		return $db;
+	}
+
+	/*
+	Expanded from
+	http://stackoverflow.com/a/42397673
+
+	Try to get a nice name for the current OS, for example: Ubuntu 14.04.5 LTS
+	*/
+	private function get_os_version() {
+		if ( function_exists("shell_exec") || is_readable("/etc/os-release")) {
+			$os         = shell_exec('cat /etc/os-release');
+			$listIds    = preg_match_all('/.*=/', $os, $matchListIds);
+			$listIds    = $matchListIds[0];
+
+			$listVal    = preg_match_all('/=.*/', $os, $matchListVal);
+			$listVal    = $matchListVal[0];
+
+			array_walk($listIds, function(&$v, $k){
+				$v = strtolower(str_replace('=', '', $v));
+			});
+
+			array_walk($listVal, function(&$v, $k){
+				$v = preg_replace('/=|"/', '', $v);
+			});
+
+			$os = array_combine($listIds, $listVal);
+
+			if ( isset( $os['pretty_name'] ) ) {
+				return $os['pretty_name'];
+			} else if ( isset( $os['name'] ) && isset( $os['version'] ) ) {
+				return $os['name'] . ' ' . $os['version'];
+			}
+		}
+		return php_uname('n') . ' ' . php_uname('r') . ' ' . php_uname('m');
+	}
+
+	/*
+		Returns an array with the total amount of memory and used memory
+	*/
+	private function get_memory() {
+		$free = shell_exec('free');
+		$free = (string)trim($free);
+		$free_arr = explode("\n", $free);
+		$mem = explode(" ", $free_arr[1]);
+		$mem = array_filter($mem);
+		$mem = array_merge($mem);
+
+		return $mem;
 	}
 }

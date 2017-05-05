@@ -197,12 +197,16 @@ class CLI extends \WP_CLI {
 	public function send( $args ) {
 		$options = get_option( 'ai_client_options' );
 		$wpinfo = new WP_Info();
-		$response = wp_remote_post( $options['remote_url'] . 'wp-json/ai/v1/collect', array(
-		    'body'    => $wpinfo->get(),
+		echo json_encode($wpinfo->get());
+		die();
+
+		$response = wp_remote_post( $options['remote_url'] . 'api/collect', array(
+		    'body'    => json_encode($wpinfo->get()),
 		    'headers' => array(
 		        'Authorization' => 'Basic ' . base64_encode( $options['project_name'] . ':' . $options['project_key'] ),
 		    ),
 		) );
+
 		if ( $response['response']['code'] != 200 ){
 			\WP_CLI::line( $response['response']['code'] );
 		} else {

@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Automated Intranet Client
+ * Plugin Name: WP Data Push
  * Plugin URI: http://mikehermans.nl
- * Description: Plugin that helps you kickstart your own intranet environment.
- * Version: 2.0
+ * Description: Pushes information about the WP installation and server to a remote server
+ * Version: 2.1
  * Author: Mike Hermans
  * Author URI: http://mikehermans.nl
  * License: GPL2

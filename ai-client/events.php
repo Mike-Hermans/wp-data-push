@@ -18,6 +18,12 @@ class Events {
         $this->new_status = $this->get_status();
     }
 
+    /**
+     * Check the difference between the old and the new status, and
+     * return the result as an array of readable strings.
+     *
+     * @return array
+     */
     public function get_events() {
         if ( ! $this->status ) {
             return array();
@@ -31,24 +37,6 @@ class Events {
                 $events[] = 'Downgraded ' . $product . ' from ' . $version . ' to ' . $this->new_status['versions'][ $product ] . '.';
             }
         }
-
-        $events = array_merge(
-            $events,
-            $this->difference(
-                $this->old_status['tables'],
-                $this->new_status['tables'],
-                'Removed %s table.'
-                )
-            );
-
-        $events = array_merge(
-            $events,
-            $this->difference(
-                $this->new_status['tables'],
-                $this->old_status['tables'],
-                'Added %s table.'
-                )
-            );
 
         $events = array_merge(
             $events,
@@ -93,25 +81,15 @@ class Events {
         return $events;
     }
 
-    public function get_updated() {
-        if ( ! empty( $this->updated ) ) {
-            return $this->updated;
-        }
-        return false;
-    }
-
-    private function difference( $one, $two, $string ) {
-        $result = array();
-
-        $diff = array_diff( $one, $two );
-
-        foreach ( $diff as $d ) {
-            $result[] = sprintf( $string, $d );
-        }
-
-        return $result;
-    }
-
+    /**
+     * Calculates the difference between two arrays and returns the result
+     * in the given string
+     *
+     * @param array  $one       Set of plugins
+     * @param array  $two       Set of plugins
+     * @param string $string    String, where %s will be replaced with the plugin name and version
+     * @return array of event strings
+     */
     private function difference_plugin( $one, $two, $string ) {
         $result = array();
 
@@ -124,6 +102,11 @@ class Events {
         return $result;
     }
 
+    /**
+     * Generate a snapshot of the current status
+     *
+     * @return array
+     */
     private function get_status() {
         global $wp_version;
         $status = array(
@@ -131,27 +114,17 @@ class Events {
                 'wordpress' => $wp_version,
                 'php' => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION . '.' . PHP_RELEASE_VERSION,
             ),
-            'tables' => $this->database_tables(),
             'plugins' => $this->active_plugins(),
             'theme' => $this->current_theme(),
         );
         return $status;
     }
 
-    private function database_tables() {
-        global $wpdb;
-        $tables = $wpdb->get_results(
-			'SELECT table_name
-			FROM information_schema.tables
-			WHERE table_schema = DATABASE()'
-		);
-        $array = array();
-        foreach ( $tables as $table ) {
-            $array[] = $table->table_name;
-        }
-        return $array;
-    }
-
+    /**
+     * Return a list of the plugins that are currently active
+     *
+     * @return array
+     */
     private function active_plugins() {
         if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -172,6 +145,11 @@ class Events {
 		return $plugins;
     }
 
+    /**
+     * Returns the theme that is currently active
+     *
+     * @return array
+     */
     private function current_theme() {
         $theme = wp_get_theme();
         return array(
@@ -180,6 +158,11 @@ class Events {
         );
     }
 
+    /**
+     * Save a new snapshot of the status
+     *
+     * @param array $status
+     */
     private function save_current_status( $status ) {
         if ( get_option( 'ai_status' ) ) {
             update_option( 'ai_status', $status );
