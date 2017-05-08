@@ -31,9 +31,10 @@ $intranet_client = new AI_Client\System();
 register_activation_hook( __FILE__, array( $intranet_client, 'activation' ) );
 register_deactivation_hook( __FILE__, array( $intranet_client, 'deactivation' ) );
 
-if ( is_admin() ) {
-	$settings = new AI_Client\Settings_Page();
-}
+// Admin page functionality disabled.
+// if ( is_admin() ) {
+// 	$settings = new AI_Client\Settings_Page();
+// }
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	WP_CLI::add_command( 'ai-client', 'AI_Client\CLI' );
