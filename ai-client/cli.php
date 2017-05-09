@@ -58,24 +58,24 @@ class CLI extends \WP_CLI {
 	 *
 	 * @subcommand admin-menu
 	 */
-	public function admin_menu( $args ) {
-		if ( ! isset( $args[0] ) ) {
-			return;
-		}
-
-		switch( $args[0] ) {
-			case 'show':
-				$this->set_option( 'show_admin', true );
-				\WP_CLI::success( 'Admin section visible.' );
-				break;
-			case 'hide':
-				$this->set_option( 'show_admin', false );
-				\WP_CLI::success( 'Admin section hidden.' );
-				break;
-			case 'default':
-				\WP_CLI::line( 'Invalid option.' );
-		}
-	}
+	// public function admin_menu( $args ) {
+	// 	if ( ! isset( $args[0] ) ) {
+	// 		return;
+	// 	}
+	//
+	// 	switch( $args[0] ) {
+	// 		case 'show':
+	// 			$this->set_option( 'show_admin', true );
+	// 			\WP_CLI::success( 'Admin section visible.' );
+	// 			break;
+	// 		case 'hide':
+	// 			$this->set_option( 'show_admin', false );
+	// 			\WP_CLI::success( 'Admin section hidden.' );
+	// 			break;
+	// 		case 'default':
+	// 			\WP_CLI::line( 'Invalid option.' );
+	// 	}
+	// }
 
 	/**
 	 * Set the url for this client to post its status to.
@@ -208,8 +208,24 @@ class CLI extends \WP_CLI {
 		if ( $response['response']['code'] != 200 ){
 			\WP_CLI::line( $response['response']['code'] );
 		} else {
-			\WP_CLI::success( $response['response']['code'] . ' ' . $response['response']['message']);
+			\WP_CLI::success( $response['response']['code'] );
 		}
+	}
+
+	/**
+	 * Show output from client without sending it to the server
+	 *
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     # Show data
+	 *     $ wp ai-client test
+	 *     <json encoded output>
+	 */
+	public function test( $args ) {
+		$options = get_option( 'ai_client_options' );
+		$wpinfo = new WP_Info();
+		\WP_CLI::line( json_encode( $wpinfo->get() ) );
 	}
 
 	private function set_option( $option, $value ) {
