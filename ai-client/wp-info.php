@@ -47,7 +47,7 @@ class WP_Info {
 
 		return array(
 			'php' => PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION . "." . PHP_RELEASE_VERSION,
-			'os' => implode(' ', $this->get_os_version()),
+			'os' => $this->get_os_version(),
 			'disk' => disk_total_space( '/' ),
 			'mem' => $mem[0],
 			'up' => $uptime
@@ -175,7 +175,6 @@ class WP_Info {
 		$free_exec = explode( "\n", trim( shell_exec( 'free' ) ) );
 		$firstline = preg_split("/[\s]+/", $free_exec[1]);
 		$total = $firstline[1];
-		var_dump($os);
 		// Ubuntu 16.xx and higher handle the 'free' command differently
 		if (version_compare( $os, '16', '>=' )) {
 			$free = $firstline[2];
