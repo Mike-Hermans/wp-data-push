@@ -47,7 +47,7 @@ class WP_Info {
 
 		return array(
 			'php' => PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION . "." . PHP_RELEASE_VERSION,
-			'os' => $this->get_os_version(),
+			'os' => implode(' ', $this->get_os_version()),
 			'disk' => disk_total_space( '/' ),
 			'mem' => $mem[0],
 			'up' => $uptime
@@ -133,7 +133,7 @@ class WP_Info {
 
 	Try to get a nice name for the current OS, for example: Ubuntu 14.04.5 LTS
 	*/
-	private function get_os_version() {
+	private function get_os_version($onlyversion = false) {
 		if ( function_exists("shell_exec") || is_readable("/etc/os-release")) {
 			$os         = shell_exec('cat /etc/os-release');
 			$listIds    = preg_match_all('/.*=/', $os, $matchListIds);
@@ -152,6 +152,10 @@ class WP_Info {
 
 			$os = array_combine($listIds, $listVal);
 
+			if ($onlyversion) {
+				return $os['version_id'];
+			}
+
 			if ( isset( $os['pretty_name'] ) ) {
 				return $os['pretty_name'];
 			} else if ( isset( $os['name'] ) && isset( $os['version'] ) ) {
@@ -166,12 +170,20 @@ class WP_Info {
 		['mem', <total>, <used>, <free>, <shared>, <buffers>, <cached>]
 	*/
 	private function get_memory() {
+		$os = $this->get_os_version(true);
+
 		$free_exec = explode( "\n", trim( shell_exec( 'free' ) ) );
-		$mem = preg_split("/[\s]+/", $free_exec[1]);
-		$total = $mem[1];
-		// This returns the free memory where cache and buffers are excluded
-		$mem = preg_split("/[\s]+/", $free_exec[2]);
-		$free = $mem[2];
+		$firstline = preg_split("/[\s]+/", $free_exec[1]);
+		$total = $firstline[1];
+		var_dump($os);
+		// Ubuntu 16.xx and higher handle the 'free' command differently
+		if (version_compare( $os, '16', '>=' )) {
+			$free = $firstline[2];
+		} else {
+			// This returns the free memory where cache and buffers are excluded
+			$secondline = preg_split("/[\s]+/", $free_exec[2]);
+			$free = $secondline[2];
+		}
 		return array($total, $free);
 	}
 
