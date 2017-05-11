@@ -49,7 +49,7 @@ class WP_Info {
 			'php' => PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION . "." . PHP_RELEASE_VERSION,
 			'os' => $this->get_os_version(),
 			'disk' => disk_total_space( '/' ),
-			'mem' => $mem[1],
+			'mem' => $mem[0],
 			'up' => $uptime
 		);
 	}
@@ -96,10 +96,11 @@ class WP_Info {
 		$mem = $this->get_memory();
 
 		$usage = array();
-		$usage['ram'] = round( sprintf( '%.2f', $mem[2] / $mem[1] * 100 ), 2 );
+		$usage['ram'] = round( sprintf( '%.2f', $mem[1] / $mem[0] * 100 ), 2 );
 		$usage['hdd'] = round( sprintf( '%.2f', $hdd_used / $hdd_total * 100 ), 2 );
 		$usage['rx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/rx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
 		$usage['tx'] = round( trim( file_get_contents( '/sys/class/net/eth0/statistics/tx_bytes' ) ) / 1024 / 1024 / 1024, 2 );
+		$usage['cpu'] = $this->get_cpu();
 
 		return $usage;
 	}
@@ -161,16 +162,25 @@ class WP_Info {
 	}
 
 	/*
-		Returns an array with the total amount of memory and used memory
+		Returns an array of memory stats returned by the 'free' shell command.
+		['mem', <total>, <used>, <free>, <shared>, <buffers>, <cached>]
 	*/
 	private function get_memory() {
-		$free = shell_exec('free');
-		$free = (string)trim($free);
-		$free_arr = explode("\n", $free);
-		$mem = explode(" ", $free_arr[1]);
-		$mem = array_filter($mem);
-		$mem = array_merge($mem);
+		$free_exec = explode( "\n", trim( shell_exec( 'free' ) ) );
+		$mem = preg_split("/[\s]+/", $free_exec[1]);
+		$total = $mem[1];
+		// This returns the free memory where cache and buffers are excluded
+		$mem = preg_split("/[\s]+/", $free_exec[2]);
+		$free = $mem[2];
+		return array($total, $free);
+	}
 
-		return $mem;
+	/*
+		Returns CPU usage
+	*/
+	private function get_cpu() {
+		$exec_loads = sys_getloadavg();
+		$exec_cores = trim(shell_exec("grep -P '^processor' /proc/cpuinfo|wc -l"));
+		return round($exec_loads[1] / ($exec_cores + 1) * 100, 2);
 	}
 }
