@@ -7,10 +7,6 @@ namespace AI_Client;
  *
  * ## EXAMPLES
  *
- *     # Show or hide admin menu entry.
- *     $ wp ai-client admin-menu show
- *     Success: Admin section visible.
- *
  *     # Set remote URL to post to
  *     $ wp ai-client set-remote <url>
  *     Success: Client will now post to <url>
@@ -18,10 +14,10 @@ namespace AI_Client;
  *     # Generate a new key
  *     $ wp ai-client generate-key
  *     New client key:
- *	   <32 character key>
+ *       <32 character key>
  *     Success: New key has been saved to the database.
  *
- *	   # Set the name
+ *       # Set the name
  *     $ wp ai-client set-name ai_client
  *     Success: Client name changed to ai_client
  *
@@ -29,7 +25,7 @@ namespace AI_Client;
  *     $ wp ai-client set-key client_key
  *     Success: New key has been set
  *
- *	   # Print status
+ *       # Print status
  *     $ wp ai-client status
  *     <status>
  *
@@ -38,44 +34,6 @@ namespace AI_Client;
  *     Success: 200 OK
  */
 class CLI extends \WP_CLI {
-	/**
-	 * Show or hide the admin page
-	 *
-	 * ## OPTIONS
-	 *
-	 * <flag>
-	 * : Show or Hide
-	 *
-	 * ## EXAMPLES
-	 *
-	 *     # Show the menu
-	 *     $ wp ai-client admin-menu show
-	 *     Success: Admin section visible.
-	 *
-	 *	   # Hide the menu
-	 *     $ wp ai-client admin-menu hide
-	 *     Success: Admin section hidden.
-	 *
-	 * @subcommand admin-menu
-	 */
-	// public function admin_menu( $args ) {
-	// 	if ( ! isset( $args[0] ) ) {
-	// 		return;
-	// 	}
-	//
-	// 	switch( $args[0] ) {
-	// 		case 'show':
-	// 			$this->set_option( 'show_admin', true );
-	// 			\WP_CLI::success( 'Admin section visible.' );
-	// 			break;
-	// 		case 'hide':
-	// 			$this->set_option( 'show_admin', false );
-	// 			\WP_CLI::success( 'Admin section hidden.' );
-	// 			break;
-	// 		case 'default':
-	// 			\WP_CLI::line( 'Invalid option.' );
-	// 	}
-	// }
 
 	/**
 	 * Set the url for this client to post its status to.
@@ -133,7 +91,7 @@ class CLI extends \WP_CLI {
 	 *     # Generate a new key
 	 *     $ wp ai-client generate-key
 	 *     New client key:
-	 *	   <32 character key>
+	 *       <32 character key>
 	 *     Success: New key has been saved to the database.
 	 *
 	 * @subcommand generate-key
@@ -187,7 +145,6 @@ class CLI extends \WP_CLI {
 	/**
 	 * Send status to remote server
 	 *
-	 *
 	 * ## EXAMPLES
 	 *
 	 *     # Send data
@@ -198,14 +155,16 @@ class CLI extends \WP_CLI {
 		$options = get_option( 'ai_client_options' );
 		$wpinfo = new WP_Info();
 
-		$response = wp_remote_post( $options['remote_url'] . 'api/collect', array(
-		    'body'    => json_encode($wpinfo->get()),
-		    'headers' => array(
-		        'Authorization' => 'Basic ' . base64_encode( $options['project_name'] . ':' . $options['project_key'] ),
-		    ),
-		) );
+		$response = wp_remote_post(
+			$options['remote_url'] . 'api/collect', array(
+				'body'    => json_encode( $wpinfo->get() ),
+				'headers' => array(
+					'Authorization' => 'Basic ' . base64_encode( $options['project_name'] . ':' . $options['project_key'] ),
+				),
+			)
+		);
 
-		if ( $response['response']['code'] != 200 ){
+		if ( 200 != $response['response']['code'] ) {
 			\WP_CLI::line( $response['response']['code'] );
 		} else {
 			\WP_CLI::success( $response['response']['code'] );
@@ -214,7 +173,6 @@ class CLI extends \WP_CLI {
 
 	/**
 	 * Show output from client without sending it to the server
-	 *
 	 *
 	 * ## EXAMPLES
 	 *
