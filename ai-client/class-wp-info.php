@@ -25,6 +25,11 @@ class WP_Info {
 		return $info;
 	}
 
+    /**
+     * Returns the current WordPress Version
+     *
+     * @return array
+     */
 	private function wp_version() {
 		include_once ABSPATH . 'wp-includes' . DIRECTORY_SEPARATOR . 'version.php';
 		global $wp_version;
@@ -33,10 +38,12 @@ class WP_Info {
 		);
 	}
 
-	/*
-    Server specific information that won't change a lot, such as PHP Version
-    and time since last boot
-    */
+    /**
+     * Server specific information that doesn't change a lot, such as PHP Version
+     * and time since last boot.
+     *
+     * @return array
+     */
 	private function status() {
 		$uptime = '';
 		if ( function_exists( 'shell_exec' ) ) {
@@ -55,6 +62,11 @@ class WP_Info {
 		);
 	}
 
+    /**
+     * Returns a list of all plugins with all their available information
+     *
+     * @return array
+     */
 	private function plugins() {
 		if ( ! function_exists( 'get_plugins' ) ) {
 			include_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -68,9 +80,12 @@ class WP_Info {
 			$active = false;
 			$new_version = null;
 
+			// Check whether the plugin is active
 			if ( in_array( $fullname, $plugins_active ) ) {
 				$active = true;
 			}
+
+			// If there's an update available, set as the new version
 			if ( isset( $plugins_updates->response[ $fullname ] ) ) {
 				$new_version = $plugins_updates->response[ $fullname ]->new_version;
 			}
@@ -87,7 +102,12 @@ class WP_Info {
 		return $plugins;
 	}
 
-	// Returns RAM and HDD usage in percentage
+    /**
+     * Returns usage of RAM, CPU and HDD in percentage, and
+     * RX / TX network info in absolute values.
+     *
+     * @return array
+     */
 	private function usage() {
 		// HDD
 		$hdd_free = round( disk_free_space( '/' ) );
@@ -106,7 +126,12 @@ class WP_Info {
 		return $usage;
 	}
 
-	// Returns database tables and their size
+    /**
+     * Returns the size for each table used by this WordPress installation,
+     * and the total size of all tables.
+     *
+     * @return array
+     */
 	private function tables() {
 		global $wpdb;
 
@@ -128,12 +153,15 @@ class WP_Info {
 		return $db;
 	}
 
-	/*
-    Expanded from
-    http://stackoverflow.com/a/42397673
-
-    Try to get a nice name for the current OS, for example: Ubuntu 14.04.5 LTS
-    */
+    /**
+     * Attempts to get a readable name for the current OS. Expanded from:
+     * http://stackoverflow.com/a/42397673
+     *
+     * example: Ubuntu 14.04.5 LTS
+     *
+     * @param bool $onlyversion when true, return only the version instead of OS + version
+     * @return string
+     */
 	private function get_os_version( $onlyversion = false ) {
 		if ( function_exists( 'shell_exec' ) || is_readable( '/etc/os-release' ) ) {
 			$os         = shell_exec( 'cat /etc/os-release' );
@@ -170,10 +198,11 @@ class WP_Info {
 		return php_uname( 'n' ) . ' ' . php_uname( 'r' ) . ' ' . php_uname( 'm' );
 	}
 
-	/*
-    Returns an array of memory stats returned by the 'free' shell command.
-    ['mem', <total>, <used>, <free>, <shared>, <buffers>, <cached>]
-    */
+    /**
+     * Returns an array of memory stats returned by the 'free' shell command.
+     *
+     * @return array
+     */
 	private function get_memory() {
 		$os = $this->get_os_version( true );
 
@@ -191,9 +220,11 @@ class WP_Info {
 		return array( $total, $free );
 	}
 
-	/*
-    Returns CPU usage
-    */
+    /**
+     * Returns the CPU usage in percentage.
+     *
+     * @return float
+     */
 	private function get_cpu() {
 		$exec_loads = sys_getloadavg();
 		$exec_cores = trim( shell_exec( "grep -P '^processor' /proc/cpuinfo|wc -l" ) );

@@ -186,6 +186,12 @@ class CLI extends \WP_CLI {
 		\WP_CLI::line( json_encode( $wpinfo->get() ) );
 	}
 
+	/**
+	 * Helper for updating the settings
+	 *
+	 * @param $option
+	 * @param $value
+	 */
 	private function set_option( $option, $value ) {
 		$options = get_option( 'ai_client_options' );
 		$options[ $option ] = $value;

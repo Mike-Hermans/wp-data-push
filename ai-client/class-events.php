@@ -9,7 +9,8 @@ class Events {
 	public $status;
 
 	public function __construct() {
-        $old_status = get_option( 'ai_status' )
+        $old_status = get_option( 'ai_status' );
+		// If status does not exist, generate one.
 		if ( false === ( $old_status ) ) {
 			$this->status = false;
 			$this->save_current_status( $this->get_status() );
@@ -32,6 +33,7 @@ class Events {
 		}
 		$events = array();
 
+		// Check if versions for PHP or WP are updated
 		foreach ( $this->old_status['versions'] as $product => $version ) {
 			if ( version_compare( $version, $this->new_status['versions'][ $product ], '<' ) ) {
 				$events[] = 'Updated ' . $product . ' from ' . $version . ' to ' . $this->new_status['versions'][ $product ] . '.';
@@ -40,6 +42,7 @@ class Events {
 			}
 		}
 
+		// Check if plugins are deactivated
 		$events = array_merge(
 			$events,
 			$this->difference_plugin(
@@ -49,6 +52,7 @@ class Events {
 			)
 		);
 
+		// Check if plugins are activated
 		$events = array_merge(
 			$events,
 			$this->difference_plugin(
@@ -58,6 +62,7 @@ class Events {
 			)
 		);
 
+		// Check if plugin versions have changed
 		foreach ( $this->old_status['plugins'] as $plugin => $data ) {
 			if ( isset( $this->new_status['plugins'][ $plugin ] ) ) {
 				if ( version_compare( $data['version'], $this->new_status['plugins'][ $plugin ]['version'], '<' ) ) {
@@ -68,6 +73,7 @@ class Events {
 			}
 		}
 
+		// Check active theme and if the version has changed
 		if ( $this->new_status['theme']['name'] != $this->old_status['theme']['name'] ) {
 			$events[] = 'Switched to ' . $this->new_status['theme']['name'] . ' theme';
 		} elseif ( $this->new_status['theme']['version'] != $this->old_status['theme']['version'] ) {
