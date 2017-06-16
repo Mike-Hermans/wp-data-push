@@ -16,10 +16,10 @@
 spl_autoload_register( 'intranet_autoloader' );
 function intranet_autoloader( $class_name ) {
     $classes_dir = trailingslashit( realpath( plugin_dir_path( __FILE__ ) ) );
-    $class_file = 'class-' . strtolower(
+    $class_file = strtolower(
         str_replace(
             array( '_', '\\' ),
-            array( '-', DIRECTORY_SEPARATOR ),
+            array( '-', DIRECTORY_SEPARATOR . 'class-'),
             $class_name
         )
     ) . '.php';
@@ -32,7 +32,6 @@ function intranet_autoloader( $class_name ) {
 $intranet_client = new AI_Client\System();
 register_activation_hook( __FILE__, array( $intranet_client, 'activation' ) );
 register_deactivation_hook( __FILE__, array( $intranet_client, 'deactivation' ) );
-register_uninstall_hook( __FILE__, array( $intranet_client, 'uninstall' ) );
 
 // Load CLI commands if wp-cli is used
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
