@@ -1,3 +1,10 @@
+**2.2.6**
+- Synchronized versions across files
+
+**2.2.5**
+- Fixed classes not loading
+- Separate uninstall file added
+
 **2.2.4**
 - Removed unused code
 - Added comments

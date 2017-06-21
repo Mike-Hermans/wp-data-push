@@ -4,7 +4,7 @@
  * Plugin URI: http://mikehermans.nl
  * Description: Pushes information about the WP installation and server to a
  * remote server
- * Version: 2.2.4
+ * Version: 2.2.6
  * Author: Mike Hermans
  * Author URI: http://mikehermans.nl
  * License: GPLv3
